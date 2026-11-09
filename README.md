@@ -1,0 +1,129 @@
+# OOM Evidence Lab
+
+Reproduces **four kinds of OOM** and turns each death into **one evidence bundle** —
+instead of a ticket that only says "the pod restarted".
+
+## Result in three lines
+
+- All four kinds are reproducible, one command each, **about 25 seconds** in total on a 16-core host.
+- Every death produces a bundle plus a **9-field alert** (exit code, verbatim evidence, fastest-growing class, ordered checks).
+- Classification is **rules first, model second** — no model is called anywhere in this repo.
+
+Measured numbers from the last run: see [`docs/RESULTS.md`](docs/RESULTS.md).
+
+## Reproduce in one command
+
+```bash
+make demo               # ~25s, needs docker; no Java on the host
+make report             # re-print alerts + rebuild docs/RESULTS.md
+make incidents          # print the incident index
+make prune DAYS=30      # delete old heap dumps, KEEP all text
+make KEEP_DUMP=1 case1  # keep the heap dump (~240 MB) to open in MAT
+```
+
+Requires `docker` (image `eclipse-temurin:21-jdk`) and `python3`.
+
+## The problem
+
+OOM happens **once every few months**. You cannot wait for it and you cannot reproduce it in test.
+When it does happen, the pod restarts 40 seconds later, service comes back, and **the evidence is gone**.
+So every occurrence starts from zero.
+
+With a 4 GB heap and one OOM every 3 months, the leak rate is roughly **45 MB/day** — clearly
+visible on a weekly chart. If nobody sees it, that is a monitoring failure, not a slow leak.
+
+## Four kinds of OOM — and why the distinction matters
+
+| Case | Kind | Decisive signal | What "fixing it" means |
+|---|---|---|---|
+| 1 | `heap` | `OutOfMemoryError: Java heap space` + heap dump | find **what retains** (retained size, shortest path) |
+| 2 | `direct_buffer` | `... direct buffer memory (allocated: N, limit: N)` | compare `MaxDirectMemorySize` with real traffic |
+| 3 | `metaspace` | `OutOfMemoryError: Metaspace` | find the **ClassLoader that never closes** |
+| 4 | `container_kill` | exit **137** + `OOMKilled=true`, JVM prints **nothing** | compare `memory.max` with `Xmx + off-heap` |
+
+Case 4 is the one that gets misdiagnosed most often: **no Java line runs** after the kernel sends
+SIGKILL, so every `try/catch`, `finally` and shutdown hook is void. It cannot be caught in code —
+it must be caught from cgroup or kubelet level.
+
+## How it works
+
+**Rules first, model second.** Known signatures are matched by rules (cheap, precise, no invention).
+A model is only used for unknown signatures, and always labelled *unconfirmed*.
+
+**An alert is an evidence bundle, not a conclusion.** Nine fields:
+
+```
+01 kind (heap / direct_buffer / metaspace / container_kill / unknown)
+02 note: UNCONFIRMED — hypothesis, not verdict
+03 one-line explanation
+04 exit_code
+05 progress marker (how far the process got)
+06 heap dump: present or not, how many bytes
+07 evidence: verbatim line from stderr
+08 fastest-growing class between two histogram snapshots
+09 four ordered checks, specific to the kind
+10 bundle path — so the alert leads straight back to the artifacts
+```
+
+**Four rules for the collector** ([`scripts/collect.sh`](scripts/collect.sh)):
+
+1. **Read-only** — no restart, no deletes, nothing written outside `out/`.
+2. **Time-boxed** — every `jcmd` runs under `timeout`; the collector may never hang.
+3. **Never invent** — a field that cannot be read is reported as `unavailable` plus the reason.
+4. **Always keep an `unknown` label** — a system with no "I don't know" label will guess.
+
+## Where the evidence is stored — three tiers
+
+Every death produces **one bundle**, not a pile of loose files.
+
+```
+out/incidents/<UTC>-<case>/     tier 1: BUNDLE — raw artifacts of that one event
+out/incidents/index.jsonl       tier 2: INDEX — one line per incident, small, greppable
+docs/INCIDENTS.md               tier 3: TABLE — generated from the index, for humans
+```
+
+One index line looks like this:
+
+```json
+{"ts":"2026-11-09T12:37:54+00:00","case":"case1","kind":"heap","exit_code":"1",
+ "oom_killed":null,"dump_bytes":0,"dump_recorded_bytes":238534436,
+ "bundle":"out/incidents/20261109T123754102841Z-case1","host":"...","lab_commit":"13587e9",
+ "files":["stderr.txt","exit_code.txt","histo-1.txt","gc.log","dump.txt"]}
+```
+
+**Retention rules:**
+
+| Artifact | Kept | Where |
+|---|---|---|
+| text (stderr, histo, gc.log, exit_code) | **forever** — tens of KB per incident | safe in git |
+| heap dump / JFR | time-limited (`make prune`) | volume or object storage, **not** git |
+| index.jsonl | forever | safe in git (it is the map) |
+
+**Three requirements before this runs in production:**
+
+1. **Dump to a real volume, never `/tmp`** — inside a container `/tmp` is usually tmpfs; a pod restart loses it.
+2. **The index must outlive the pod** — write it outside the pod (object storage or a small db).
+3. **One named owner** — without an owner, six months later the bundle sits there and nobody opens it.
+
+Querying:
+
+```bash
+grep '"kind": "heap"' out/incidents/index.jsonl   # every heap OOM
+python3 scripts/store.py list                     # everything
+ls out/incidents/*-container_kill/                # bundles by kind
+```
+
+## Evidence
+
+- [`docs/RESULTS.md`](docs/RESULTS.md) — result table, raw evidence, and the alert for the last run.
+- [`docs/INCIDENTS.md`](docs/INCIDENTS.md) — log of every stored death, generated from the index.
+- `out/case*/histo-*.txt` — `jcmd GC.class_histogram` over time (diff them to find steady growth).
+- `out/case*/gc.log` — GC log for case 1 (`-Xlog:gc*`).
+- `make KEEP_DUMP=1 case1` — keep the ~240 MB heap dump for MAT.
+
+## What this repo does NOT prove
+
+- **It has never run under real traffic.** This is a controlled reproduction, not production data.
+- **There is no labelled dataset**, so the accuracy of the classification step is not measured.
+- **It does not handle SIGKILL in time to write a dump** — when the kernel kills a container there is
+  no dump, which is exactly why the signal has to come from cgroup rather than from the JVM.
