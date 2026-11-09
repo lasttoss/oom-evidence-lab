@@ -1,0 +1,80 @@
+# The flags are identical to a VM. What changes is WHERE the dump goes, WHO reports the kill,
+# and WHAT is left after the pod is recreated.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: api}
+  template:
+    metadata:
+      labels: {app: api}
+      annotations:
+        # Where a human looks first when the alert fires.
+        oom-lab/runbook: "https://github.com/<org>/oom-evidence-lab/blob/main/docs/COVERAGE.md"
+    spec:
+      containers:
+        - name: api
+          image: registry.example.com/api:1.2.3
+          env:
+            - name: JAVA_OPTS
+              value: >-
+                -Xmx1g
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/dumps
+                -XX:+ExitOnOutOfMemoryError
+                -XX:NativeMemoryTracking=summary
+                -Xlog:gc*:file=/dumps/gc.log:time,uptime,level,tags:filecount=5,filesize=20m
+          resources:
+            limits:
+              memory: "1536Mi"        # Xmx + off-heap + stacks + overhead, NOT Xmx alone
+            requests:
+              memory: "1Gi"
+          volumeMounts:
+            - name: dumps
+              mountPath: /dumps
+          # Tell the platform the process is expected to die on an OOM: exit 1 is not a crash loop bug.
+          # (ExitOnOutOfMemoryError makes the JVM exit so the restart is visible and fast.)
+      volumes:
+        - name: dumps
+          persistentVolumeClaim:
+            claimName: java-dumps
+        # If the dump must survive a PVC reset, ship it out: same volume, second container.
+        - name: outbox
+          emptyDir: {}
+---
+# Optional: ship dumps to object storage so they survive even the PVC.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-with-uploader
+  namespace: prod
+spec:
+  containers:
+    - name: api
+      image: registry.example.com/api:1.2.3
+      volumeMounts:
+        - {name: dumps, mountPath: /dumps}
+    - name: uploader
+      image: amazon/aws-cli:2
+      # the sidecar sees the SAME directory and copies every finished dump out
+      command: ["sh", "-c"]
+      args:
+        - |
+          while true; do
+            for f in /dumps/*.hprof; do
+              [ -f "$f" ] || continue
+              if aws s3 cp "$f" "s3://my-dumps/$(hostname)/$(basename "$f")"; then
+                rm -f "$f"          # free the PVC only after the upload succeeded
+              fi
+            done
+            sleep 60
+          done
+      volumeMounts:
+        - {name: dumps, mountPath: /dumps}
+  volumes:
+    - name: dumps
+      persistentVolumeClaim: {claimName: java-dumps}

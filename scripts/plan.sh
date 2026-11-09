@@ -73,8 +73,14 @@ echo "# Q6 THE DECISIVE SIGNAL — did the kernel kill it, or did the JVM throw?
 case "$MODE" in
   k8s)
     echo "kubectl -n <ns> get pod <pod> -o jsonpath='{.status.containerStatuses[*].lastState.terminated}'"
-    echo "kubectl -n <ns> describe pod <pod> | grep -iE 'OOMKilled|exit code|Reason'"
-    echo "awk '/^oom_kill/{print}' /sys/fs/cgroup/memory.events   # v2;  memory.oom_control (v1)" ;;
+    echo "kubectl -n <ns> get pod <pod> -o jsonpath='{.status.containerStatuses[*].restartCount}'"
+    echo "kubectl -n <ns> describe pod <pod> | grep -iE 'OOMKilled|exit code|Reason|Evicted'"
+    echo "kubectl -n <ns> get events --field-selector involvedObject.name=<pod> --sort-by=.lastTimestamp"
+    echo "awk '/^oom_kill/{print}' /sys/fs/cgroup/memory.events   # inside the container (kubectl exec)"
+    echo "# three different deaths, three different reasons:"
+    echo "#   OOMKilled   container limit was hit        -> this lab's case4"
+    echo "#   Evicted     node ran out of memory/disk    -> not your heap; check node pressure"
+    echo "#   probe fail  liveness/readiness restarted   -> not memory at all" ;;
   docker)
     echo "docker inspect <id> --format '{{.State.OOMKilled}} {{.State.ExitCode}}'"
     echo "dmesg -T | grep -i 'killed process' | tail -5" ;;
@@ -82,6 +88,15 @@ case "$MODE" in
     echo "grep -E 'OutOfMemoryError|hs_err_pid' \$CATALINA_BASE/logs/catalina.out 2>/dev/null || journalctl -u <svc> -n 200"
     echo "dmesg -T | grep -iE 'out of memory|killed process' | tail -5"
     echo "ls -t hs_err_pid*.log 2>/dev/null | head -3" ;;
+esac
+echo
+
+echo "# FETCH — the dump is on a volume; get it out before the pod is replaced"
+case "$MODE" in
+  k8s)    echo "kubectl -n <ns> cp <pod>:/dumps/$(ls -t /dumps/*.hprof 2>/dev/null | head -1 | xargs -r basename) ./  # or let the sidecar ship it to S3"
+          echo "kubectl -n <ns> debug -it <pod> --image=eclipse-temurin:21-jdk --target=api -- bash  # inspect a running pod" ;;
+  docker) echo "docker cp <id>:/dumps/. ./dumps/" ;;
+  *)      echo "cp /var/log/java-dumps/*.hprof ./ (or read it where it already is)" ;;
 esac
 echo
 

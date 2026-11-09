@@ -152,6 +152,17 @@ A model is only used for unknown signatures, and always labelled *unconfirmed*.
 3. **Never invent** — a field that cannot be read is reported as `unavailable` plus the reason.
 4. **Always keep an `unknown` label** — a system with no "I don't know" label will guess.
 
+## Running it on Kubernetes
+
+The flags are identical everywhere; only four things change — where the dump lands (PVC, never
+`emptyDir`), who reports the kill (`lastState.terminated.reason`, not `dmesg`), what survives the death
+(nothing but the volume), and how you fetch it (`kubectl cp` or a sidecar).
+See [`docs/K8S.md`](docs/K8S.md) and [`deploy/k8s/`](deploy/k8s/).
+
+Also worth knowing: on Kubernetes there are **three** different deaths and only one is an OOM —
+`OOMKilled` · `Evicted` (node pressure) · probe failure. Calling all three "OOM" sends people hunting
+for a leak that does not exist.
+
 ## An `unknown` must say WHY it is unknown
 
 "Full evidence" is a claim worth being precise about. A bundle is complete only for **what was armed

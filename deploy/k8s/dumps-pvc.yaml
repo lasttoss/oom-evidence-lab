@@ -1,0 +1,12 @@
+# A heap dump must land on storage that outlives the pod. emptyDir and /tmp do not.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: java-dumps
+  namespace: prod
+spec:
+  accessModes: ["ReadWriteMany"]     # ReadWriteOnce is fine for one replica; RWX for a DaemonSet
+  resources:
+    requests:
+      storage: 20Gi                 # a dump can be as large as the LIVE set, not the heap size
+  storageClassName: standard        # must NOT be a tmpfs-backed class
