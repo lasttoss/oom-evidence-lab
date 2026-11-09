@@ -45,6 +45,30 @@ Case 4 is the one that gets misdiagnosed most often: **no Java line runs** after
 SIGKILL, so every `try/catch`, `finally` and shutdown hook is void. It cannot be caught in code —
 it must be caught from cgroup or kubelet level.
 
+## Step 1 is environment-dependent, step 2 is not
+
+The same six questions are asked everywhere; only the tool changes:
+
+```
+Q1 CEILING    what is the real upper bound        k8s limit / docker Memory / Xmx / ulimit
+Q2 USAGE      heap vs off-heap vs native          jcmd GC.heap_info + VM.native_memory + RSS
+Q3 TREND      leak or spike                       class_histogram over time, jstat
+Q4 CLASSES    who generates them                  VM.metaspace, VM.classloader_stats
+Q5 THREADS    can a thread still be created       Thread.print, pids.max, ulimit -u
+Q6 SIGNAL     kernel killed it, or JVM threw      OOMKilled, cgroup memory.events, hs_err_pid
+```
+
+`scripts/plan.sh` detects the environment (vm · docker · k8s · tomcat) and prints the exact
+commands for that environment — it never guesses at a pod limit with a host command:
+
+```bash
+make plan                  # auto-detect
+make plan ENV=k8s PID=17
+```
+
+**Q6 comes first in practice.** If the kernel killed the process, every step-2 tool is pointless:
+there is no process left to ask. Order is: ceiling → signal → usage → trend → classes.
+
 ## How it works
 
 **Rules first, model second.** Known signatures are matched by rules (cheap, precise, no invention).

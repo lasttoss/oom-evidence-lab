@@ -3,13 +3,15 @@ SHELL := /bin/bash
 IMAGE := eclipse-temurin:21-jdk
 DOCKER_RUN := docker run --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -e KEEP_DUMP=$${KEEP_DUMP:-0} -v "$(PWD):/lab" -w /lab $(IMAGE)
 
-.PHONY: demo case1 case2 case3 case4 report incidents prune clean help
+.PHONY: demo case1 case2 case3 case4 report incidents plan prune clean help
 
 help:
 	@echo "make demo               run all 4 cases, store bundles, print alerts (~25s)"
 	@echo "make case1..case4       run a single case"
 	@echo "make report             re-print alerts from existing artifacts + rebuild docs/RESULTS.md"
 	@echo "make incidents          print the stored incident index"
+	@echo "make plan               detect the environment and print the commands for it"
+	@echo "make plan ENV=k8s PID=17  force an environment (vm|docker|k8s|tomcat)"
 	@echo "make prune DAYS=30      delete old heap dumps, KEEP all text artifacts"
 	@echo "make KEEP_DUMP=1 case1  keep the heap dump (~240MB) to open in MAT"
 
@@ -37,6 +39,9 @@ report:
 
 incidents:
 	@python3 scripts/store.py list
+
+plan:
+	@bash scripts/plan.sh $(or $(ENV),auto) $(or $(PID),)
 
 prune:
 	@python3 scripts/store.py prune --dumps-days $(or $(DAYS),30)
