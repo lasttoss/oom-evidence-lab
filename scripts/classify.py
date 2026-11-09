@@ -14,6 +14,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from signature import fingerprint, normalise  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 HISTO_LINE = re.compile(r"^\s*\d+:\s+(\d+)\s+(\d+)\s+(.+)$")
 MODULE_SUFFIX = re.compile(r"\s+\([^)]*\)?\s*$")
@@ -255,6 +258,9 @@ def alert_for(case_dir: Path) -> str:
         cause, why = triage(case_dir)
         lines.append(f"11.why_unknown     {cause} — {why}")
         lines.append(f"     triage: {TRIAGE[cause]}")
+        raw = read(case_dir, "stderr.txt") or stdout
+        lines.append(f"12.fingerprint     {fingerprint(raw)}   (count variants by this, not by raw text)")
+        lines.append(f"     normalised: {normalise(raw) or '(no text captured)'}")
 
     bundle = read(case_dir, "bundle.txt").strip()
     if bundle:

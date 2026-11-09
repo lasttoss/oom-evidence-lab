@@ -8,6 +8,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+def load_sig():
+    spec = importlib.util.spec_from_file_location("signature", Path(__file__).with_name("signature.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 spec = importlib.util.spec_from_file_location("classify", Path(__file__).with_name("classify.py"))
 classify = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(classify)
@@ -61,6 +68,20 @@ def run_triage(stderr: str, code: str, with_histo: bool) -> str:
         return classify.triage(d)[0]
 
 
+SIG_CASES = [
+    # same problem, different numbers -> identical fingerprint
+    ("java.lang.OutOfMemoryError: Cannot reserve 1048576 bytes of direct buffer memory (allocated: 67108864, limit: 67108864)",
+     "java.lang.OutOfMemoryError: Cannot reserve 2097152 bytes of direct buffer memory (allocated: 999, limit: 1000)",
+     True),
+    # same prefix, different failure -> different fingerprint
+    ("java.lang.OutOfMemoryError: Java heap space",
+     "java.lang.OutOfMemoryError: Metaspace", False),
+    # paths and hex ids must not split one signature into many
+    ("Native memory allocation (mmap) failed to map 12288 bytes at /tmp/a/b.so 0xdeadbeef",
+     "Native memory allocation (mmap) failed to map 4096 bytes at /opt/x/y.so 0x1234", True),
+]
+
+
 def main() -> int:
     failed = 0
     for stderr, code, killed, expected in CASES:
@@ -74,7 +95,12 @@ def main() -> int:
         ok = got == expected
         failed += 0 if ok else 1
         print(f"{'PASS' if ok else 'FAIL'}  triage:{expected:<14} histo={with_histo}")
-    total = len(CASES) + len(TRIAGE_CASES)
+    sig = load_sig()
+    for a, b, same in SIG_CASES:
+        ok = (sig.fingerprint(a) == sig.fingerprint(b)) is same
+        failed += 0 if ok else 1
+        print(f"{'PASS' if ok else 'FAIL'}  fingerprint      same={same}  {a[:40]}")
+    total = len(CASES) + len(TRIAGE_CASES) + len(SIG_CASES)
     print(f"\n{total - failed}/{total} passed")
     return 1 if failed else 0
 

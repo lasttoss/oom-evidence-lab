@@ -152,6 +152,28 @@ A model is only used for unknown signatures, and always labelled *unconfirmed*.
 3. **Never invent** — a field that cannot be read is reported as `unavailable` plus the reason.
 4. **Always keep an `unknown` label** — a system with no "I don't know" label will guess.
 
+## Counting new kinds without knowing how many exist
+
+The total number of OOM *kinds* cannot be known in advance — but the number of **distinct signatures
+seen** can, and that is the number that matters. Every event gets a fingerprint: the failure line
+with numbers, hex ids, UUIDs, paths and quoted strings stripped.
+
+```bash
+make gaps      # unknown queue grouped by fingerprint -> docs/GAPS.md
+```
+
+```
+"cannot reserve 1048576 bytes of direct buffer memory (allocated: 67108864, limit: 67108864)"
+"cannot reserve 2097152 bytes of direct buffer memory (allocated: 999, limit: 1000)"
+        ↓ same fingerprint — one signature, two events
+```
+
+So the metric is **new distinct signatures per month**, which must trend to zero, instead of
+"how many kinds are left", which is unanswerable. Fifty unknown events may be three signatures.
+
+**And a rule is never written from a single occurrence.** A rule that fires wrongly is worse than
+`unknown`: it classifies silently and nobody notices. Wait for the second or third occurrence.
+
 ## Running it on Kubernetes
 
 The flags are identical everywhere; only four things change — where the dump lands (PVC, never

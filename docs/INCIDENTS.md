@@ -6,12 +6,12 @@ Total records: **6**
 
 | Timestamp (UTC) | Case | Kind | Exit | OOMKilled | Dump | Bundle |
 |---|---|---|---|---|---|---|
-| 2026-11-09T13:25:44+00:00 | case1 | heap | 1 | – | 227 MB | `out/incidents/20261109T132544585092Z-case1` |
-| 2026-11-09T13:25:48+00:00 | case2 | direct_buffer | 1 | – | – | `out/incidents/20261109T132548543832Z-case2` |
-| 2026-11-09T13:25:52+00:00 | case3 | metaspace | 1 | – | – | `out/incidents/20261109T132552494335Z-case3` |
-| 2026-11-09T13:25:54+00:00 | case4 | container_kill | 137 | true | – | `out/incidents/20261109T132554529597Z-case4` |
-| 2026-11-09T13:25:58+00:00 | case5 | array_too_large | 1 | – | – | `out/incidents/20261109T132558408401Z-case5` |
-| 2026-11-09T13:25:59+00:00 | case6 | native_thread | 1 | – | – | `out/incidents/20261109T132559584853Z-case6` |
+| 2026-11-09T13:36:48+00:00 | case1 | heap | 1 | – | 227 MB | `out/incidents/20261109T133648189034Z-case1` |
+| 2026-11-09T13:36:52+00:00 | case2 | direct_buffer | 1 | – | – | `out/incidents/20261109T133652065561Z-case2` |
+| 2026-11-09T13:36:55+00:00 | case3 | metaspace | 1 | – | – | `out/incidents/20261109T133655983696Z-case3` |
+| 2026-11-09T13:36:57+00:00 | case4 | container_kill | 137 | true | – | `out/incidents/20261109T133657915419Z-case4` |
+| 2026-11-09T13:37:01+00:00 | case5 | array_too_large | 1 | – | – | `out/incidents/20261109T133701756831Z-case5` |
+| 2026-11-09T13:37:02+00:00 | case6 | native_thread | 1 | – | – | `out/incidents/20261109T133702925330Z-case6` |
 
 ## How to query
 

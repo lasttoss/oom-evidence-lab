@@ -32,6 +32,17 @@ DOC = ROOT / "docs" / "INCIDENTS.md"
 HEAVY = (".hprof", ".jfr")
 
 
+def signature_fp(bundle: Path) -> str | None:
+    """Same fingerprint the alert uses, so an unknown can be counted across occurrences."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from signature import fingerprint
+    for name in ("stderr.txt", "stdout.txt"):
+        p = bundle / name
+        if p.exists() and p.read_text(errors="replace").strip():
+            return fingerprint(p.read_text(errors="replace"))
+    return None
+
+
 def classify_kind(case_dir: Path) -> str:
     r = subprocess.run([sys.executable, str(ROOT / "scripts/classify.py"), str(case_dir)],
                        capture_output=True, text=True)
@@ -85,6 +96,7 @@ def archive(case_dir_arg: str) -> Path:
         "bundle": str(bundle.relative_to(ROOT)),
         "host": socket.gethostname(),
         "lab_commit": lab_commit(),
+        "fp": signature_fp(bundle),
         "files": sorted(str(f.relative_to(bundle)) for f in bundle.rglob("*") if f.is_file()),
     }
     INC.mkdir(parents=True, exist_ok=True)
