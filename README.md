@@ -11,6 +11,18 @@ instead of a ticket that only says "the pod restarted".
 
 Measured numbers from the last run: see [`docs/RESULTS.md`](docs/RESULTS.md).
 
+## How the pieces fit
+
+Two lanes, and the split between them is the whole design: evidence is **armed before** the incident
+and **classified after** it. Nothing in the lower lane can recreate what the upper lane failed to record.
+
+![OOM evidence pipeline: guarding and snapshotting happen before the death; collect, classify, persist and alert run after it; an unknown returns through a fingerprint to a proposed rule that a human merges](docs/figures/oom-evidence-pipeline.png)
+
+**Figure 1.** The dashed loop is the only path by which the rule table changes: an unknown keeps its
+cause and its fingerprint, `make learn` proposes a rule, a human names the kind and writes its four
+checks. Nothing in the loop rewrites the classifier unattended.
+Source: [`docs/figures/oom-evidence-pipeline.html`](docs/figures/oom-evidence-pipeline.html) (self-contained, also exported as `.svg`).
+
 ## Reproduce in one command
 
 ```bash
