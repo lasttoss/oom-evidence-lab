@@ -174,6 +174,49 @@ So the metric is **new distinct signatures per month**, which must trend to zero
 **And a rule is never written from a single occurrence.** A rule that fires wrongly is worse than
 `unknown`: it classifies silently and nobody notices. Wait for the second or third occurrence.
 
+## Where the nine messages come from — and how drift is caught
+
+There is **no vendor-published "OOM error code table"** for Java. The de facto canonical list is the
+string literals in HotSpot itself, so the honest way to keep the table current is to read them from
+source and notice when they change:
+
+```bash
+make upstream      # fetch the files, assert every literal is still there, exit 1 on drift
+```
+
+Verified against `openjdk/jdk@master` on 2026-11-09 — 7 of 9 literals pinned to a file:
+
+```
+OK  Java heap space / GC overhead limit exceeded / Requested array size exceeds VM limit
+    Metaspace / Compressed class space      hotspot/share/memory/universe.cpp
+OK  bytes of direct buffer memory           java.base/share/classes/java/nio/Bits.java
+OK  Native memory allocation                hotspot/share/utilities/vmError.cpp
+    unable to create native thread          not pinned to a file yet — listed openly, not guessed
+    Out of swap space?                      not pinned to a file yet
+```
+
+When a JDK upgrade lands, new messages arrive in two places worth watching:
+
+```
+https://bugs.openjdk.org  jql: text ~ "OutOfMemoryError" ORDER BY created DESC
+github.com/openjdk/jdk/commits/master/src/hotspot/share/memory/universe.cpp
+```
+
+A `DRIFT` result does not mean the JDK is wrong — it means **our rule is now wrong**, and the wording
+change is exactly the kind of "unknown" that would otherwise appear in production for a week.
+
+### Where the *method* comes from
+
+Fingerprinting events into groups is standard practice, and two public implementations are worth
+citing because they hit the same limit this repo hits:
+
+- **Elasticsearch fingerprint processor** — hashes a chosen set of fields (default `SHA-1`) into a
+  `fingerprint` field. Direct precedent for "normalise, then hash".
+- **Sentry issue grouping** — a fingerprint groups events into one issue; when no stack trace is
+  available it falls back to "the message without any parameters" — the same idea as stripping numbers.
+  Notably, Sentry later added **AI-enhanced grouping** to merge events with *different* fingerprints
+  that are semantically the same. That is the honest limitation of any exact-hash scheme, including this one.
+
 ## Closing the loop: `make learn` proposes, a human merges
 
 The unknown queue is not a dead end. It feeds a proposal step that is automatic up to the point

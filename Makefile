@@ -3,7 +3,7 @@ SHELL := /bin/bash
 IMAGE := eclipse-temurin:21-jdk
 DOCKER_RUN := docker run --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -e KEEP_DUMP=$${KEEP_DUMP:-0} -v "$(PWD):/lab" -w /lab $(IMAGE)
 
-.PHONY: demo case1 case2 case3 case4 case5 case6 report incidents plan guard watch coverage gaps learn intake prune clean help
+.PHONY: demo case1 case2 case3 case4 case5 case6 report incidents plan guard watch coverage gaps learn upstream intake prune clean help
 
 help:
 	@echo "make demo               run all 4 cases, store bundles, print alerts (~25s)"
@@ -15,6 +15,7 @@ help:
 	@echo "make coverage           coverage table: A reproduced, B rule only, C no rule"
 	@echo "make gaps               unknown-signature queue, grouped by fingerprint"
 	@echo "make learn [MIN=3]      propose rules for unknown signatures (never applies them)"
+	@echo "make upstream           check the rule table against the JDK source (drift detector)"
 	@echo "make intake PID=..      collect a field set for an unrecognised OOM"
 	@echo "make plan               detect the environment and print the commands for it"
 	@echo "make plan ENV=k8s PID=17  force an environment (vm|docker|k8s|tomcat)"
@@ -73,6 +74,9 @@ gaps:
 
 learn:
 	@python3 scripts/learn.py $(if $(MIN),--min-events $(MIN),)
+
+upstream:
+	@bash scripts/upstream.sh
 
 intake:
 	@bash scripts/intake.sh $(or $(PID),1) $(or $(LABEL),report)
