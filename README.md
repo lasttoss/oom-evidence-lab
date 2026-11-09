@@ -238,5 +238,9 @@ ls out/incidents/*-container_kill/                # bundles by kind
 
 - **It has never run under real traffic.** This is a controlled reproduction, not production data.
 - **There is no labelled dataset**, so the accuracy of the classification step is not measured.
+- **No production numbers**: detection latency, alert precision and cost only exist after a pilot —
+  see [`docs/PILOT.md`](docs/PILOT.md) for the 30-day plan and the exact metrics to report.
+- **Mechanism numbers are safe to quote; environment numbers are not.** "A dump can be as large as the
+  live set" travels. "179 threads" is a property of one `pids.max`.
 - **It does not handle SIGKILL in time to write a dump** — when the kernel kills a container there is
   no dump, which is exactly why the signal has to come from cgroup rather than from the JVM.
