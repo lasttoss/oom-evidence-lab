@@ -3,7 +3,7 @@ SHELL := /bin/bash
 IMAGE := eclipse-temurin:21-jdk
 DOCKER_RUN := docker run --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -e KEEP_DUMP=$${KEEP_DUMP:-0} -v "$(PWD):/lab" -w /lab $(IMAGE)
 
-.PHONY: demo case1 case2 case3 case4 case5 case6 report incidents plan guard watch coverage gaps learn upstream intake prune clean help
+.PHONY: demo case1 case2 case3 case4 case5 case6 report incidents plan guard watch coverage attribution gaps learn upstream intake prune clean help
 
 help:
 	@echo "make demo               run all 4 cases, store bundles, print alerts (~25s)"
@@ -13,6 +13,7 @@ help:
 	@echo "make guard              print + CHECK the JVM flags that arm the evidence (exit 1 if not armed)"
 	@echo "make watch PID=.. SECS=60  snapshot histo + cgroup while the process is alive"
 	@echo "make coverage           coverage table: A reproduced, B rule only, C no rule"
+	@echo "make attribution        can the evidence say WHERE? -> docs/ATTRIBUTION.md"
 	@echo "make gaps               unknown-signature queue, grouped by fingerprint"
 	@echo "make learn [MIN=3]      propose rules for unknown signatures (never applies them)"
 	@echo "make upstream           check the rule table against the JDK source (drift detector)"
@@ -53,6 +54,7 @@ report:
 	@python3 scripts/gen_results.py
 	@python3 scripts/coverage.py > /dev/null
 	@python3 scripts/gaps.py > /dev/null
+	@python3 scripts/attribution.py > /dev/null
 
 incidents:
 	@python3 scripts/store.py list
@@ -68,6 +70,9 @@ watch:
 
 coverage:
 	@python3 scripts/coverage.py
+
+attribution:
+	@python3 scripts/attribution.py
 
 gaps:
 	@python3 scripts/gaps.py

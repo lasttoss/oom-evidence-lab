@@ -61,6 +61,34 @@ REPRO = {
     "native_thread": "case6",
 }
 
+# Can the evidence point at WHERE the problem is? Three honest answers.
+#   "in-evidence"  the artifact we already have names the site
+#   "pre-captured" only something armed BEFORE the death can locate it
+#   "never"        nothing in the process can locate it; the death left no location
+ATTRIBUTION = {
+    "heap": ("in-evidence", "with a dump: retained size + shortest path to a static field (MAT). "
+                            "without a dump: diff two histograms to get the growing class, then grep for its holders"),
+    "gc_overhead": ("in-evidence", "same as heap: the dump or the histogram diff names the growing class"),
+    "array_too_large": ("in-evidence", "the stack trace names the allocation site directly — "
+                                       "this is the one kind whose location is in the exception text"),
+    "metaspace": ("in-evidence", "VM.metaspace + VM.classloader_stats give the loader count; "
+                                 "with a dump, the retained ClassLoader names the generator"),
+    "compressed_class": ("in-evidence", "VM.metaspace shows the Compressed Class Space row; "
+                                        "the loader that grows is the suspect"),
+    "direct_buffer": ("pre-captured", "BufferPoolMXBean over time gives the size, not the site. "
+                                      "the allocation site needs JFR or async-profiler -e alloc armed in advance; "
+                                      "a heap dump will NOT show it"),
+    "native_thread": ("pre-captured", "thread count and pool names come from Thread.print; "
+                                      "which code creates threads needs a thread dump taken before the limit is hit"),
+    "native_alloc": ("in-evidence", "hs_err_pid: Problematic frame + the failing allocation + the memory map. "
+                                    "a full native stack needs a core dump (ulimit -c + core_pattern)"),
+    "swap": ("in-evidence", "hs_err_pid; the arithmetic threads x -Xss shows whether stacks are the cause"),
+    "container_kill": ("never", "NO in-process location exists: SIGKILL leaves no frames, no dump, no finally. "
+                                "The only attribution is what was captured BEFORE the kill — interval snapshots "
+                                "(watch.sh) plus the cgroup oom_kill timestamp — and the honest answer is often "
+                                "'the ceiling was too low', which is a sizing fact, not a code location"),
+}
+
 CHECKS = {
     "heap": [
         "1) open the dump: % of live heap, your class or a JDK class, any Shortest Path to a static field",
@@ -268,6 +296,9 @@ def alert_for(case_dir: Path) -> str:
     bundle = read(case_dir, "bundle.txt").strip()
     if bundle:
         lines.append(f"10.stored_at       {bundle}/  (search: grep {kind} out/incidents/index.jsonl)")
+
+    loc, how = ATTRIBUTION.get(kind, ("unknown", "no attribution rule for this kind"))
+    lines.append(f"13.attribution     {loc} — {how}")
     return "\n".join(lines)
 
 

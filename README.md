@@ -152,6 +152,28 @@ A model is only used for unknown signatures, and always labelled *unconfirmed*.
 3. **Never invent** — a field that cannot be read is reported as `unavailable` plus the reason.
 4. **Always keep an `unknown` label** — a system with no "I don't know" label will guess.
 
+## Classification says WHICH. Attribution says WHERE — and one kind has no answer
+
+`make attribution` → [`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md). Seven kinds name the location in the
+evidence you already have; two only if something was armed in advance; **one never does**:
+
+```
+heap, gc_overhead, array_too_large, metaspace,   in-evidence   dump / histogram diff / stack trace
+compressed_class, native_alloc, swap
+
+direct_buffer, native_thread                     pre-captured  site needs JFR or async-profiler, armed first
+container_kill                                   NEVER         SIGKILL leaves no frames, no dump, no finally
+```
+
+So for a kernel kill the only attribution that will ever exist is what `watch.sh` recorded while the
+process was alive. If nobody armed that, the honest output is *"the ceiling was hit; we cannot say
+which allocation drove it"* — which is more useful than a confident guess, because it tells the next
+person exactly what to arm.
+
+**The rule the table enforces: classification happens after death, attribution has to be captured before it.**
+NMT cannot be switched on after the event, JFR cannot record the past, a core dump is not written
+retroactively — which is also why `guard.sh` fails the build when the flags are missing.
+
 ## Counting new kinds without knowing how many exist
 
 The total number of OOM *kinds* cannot be known in advance — but the number of **distinct signatures
