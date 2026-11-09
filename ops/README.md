@@ -46,5 +46,5 @@ unwritable, or on **tmpfs** (a tmpfs dump dies with the machine, the pod, or the
 1  arm       guard.sh in the deploy pipeline / CI — red when a flag is removed
 2  watch     watch.sh (cron, systemd timer or CronJob) — the only attribution for a kernel kill
 3  alert     point your alert rule at the bundle path: field 10.stored_at
-4  review    make gap review once a month: new fingerprints, and nothing else
+4  review    make gaps once a month: new fingerprints, and nothing else
 ```
