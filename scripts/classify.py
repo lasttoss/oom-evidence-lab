@@ -183,6 +183,40 @@ def classify(case_dir: Path) -> tuple[str, str, list[str]]:
     return "unknown", "Matched no rule. This label is mandatory: never force a guess.", []
 
 
+TRIAGE = {
+    "NEW_SIGNATURE": "Evidence is present and complete, but no rule matches: this is a genuinely "
+                     "unseen signature. Add one rule line plus four checks; a case only if reproducible.",
+    "CONFIG_GAP":    "Something that should have been armed was not (no NMT, no dump flag, no JFR). "
+                     "The gap is configuration, not knowledge: fix it with guard.sh, then wait for the next event.",
+    "EVIDENCE_GAP":  "No usable artifact at all: nothing to compare against. The missing piece is "
+                     "collection, not a new rule.",
+    "TIMING_GAP":    "Artifacts exist but are truncated or empty: the process died mid-write. The gap is "
+                     "detection latency, not classification.",
+}
+
+
+def triage(case_dir: Path) -> tuple[str, str]:
+    """An unknown has three different causes, and only one of them means 'new kind'."""
+    stderr = read(case_dir, "stderr.txt")
+    stdout = read(case_dir, "stdout.txt")
+    exit_code = read(case_dir, "exit_code.txt").strip()
+    histos = [f for f in case_dir.glob("histo-*.txt")
+              if "#instances" in f.read_text(errors="replace")]
+    has_error_text = "OutOfMemoryError" in stderr or "Out of Memory Error" in stderr
+
+    if not stderr.strip() and not stdout.strip():
+        return "EVIDENCE_GAP", "nothing textual was captured (no stderr, no stdout) — " \
+                               "only an exit code, which cannot name a kind"
+    if has_error_text and histos:
+        return "NEW_SIGNATURE", "an OOM message is present, snapshots are present, no rule matches it"
+    if has_error_text:
+        return "TIMING_GAP", "an OOM message is present but no usable histogram snapshot survived"
+    if not stderr.strip() and exit_code == "137":
+        return "CONFIG_GAP", "killed with no JVM output: dump/JFR were not armed, and a SIGKILL " \
+                             "cannot be dumped at all"
+    return "NEW_SIGNATURE", "evidence is present, no rule matches it"
+
+
 def fmt_bytes(n: int) -> str:
     return f"{n / 1024 / 1024:.1f} MB"
 
@@ -216,6 +250,11 @@ def alert_for(case_dir: Path) -> str:
 
     lines.append("09.checks_in_order")
     lines.extend(f"     {c}" for c in CHECKS.get(kind, []))
+
+    if kind == "unknown":
+        cause, why = triage(case_dir)
+        lines.append(f"11.why_unknown     {cause} — {why}")
+        lines.append(f"     triage: {TRIAGE[cause]}")
 
     bundle = read(case_dir, "bundle.txt").strip()
     if bundle:

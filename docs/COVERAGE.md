@@ -38,6 +38,8 @@ know, and the evidence is already stored. Then, in this order:
 
 1. `bash scripts/intake.sh <pid>` — collect the standard field set for that event into `out/intake/`,
    plus the cgroup/kubelet facts and `dmesg`.
+   Then read field `11.why_unknown`: `NEW_SIGNATURE` means a new rule; `CONFIG_GAP` means the
+   evidence was never armed; `EVIDENCE_GAP` / `TIMING_GAP` mean the gap is collection, not knowledge.
 2. Add one rule line to `scripts/classify.py` (`RULES`) with the verbatim signature.
 3. Add its four ordered checks to `CHECKS` — a thread problem is not a heap problem.
 4. If it can be reproduced in a container, add a case; if not, leave `REPRO` without it and the

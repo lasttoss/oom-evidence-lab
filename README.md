@@ -152,6 +152,28 @@ A model is only used for unknown signatures, and always labelled *unconfirmed*.
 3. **Never invent** — a field that cannot be read is reported as `unavailable` plus the reason.
 4. **Always keep an `unknown` label** — a system with no "I don't know" label will guess.
 
+## An `unknown` must say WHY it is unknown
+
+"Full evidence" is a claim worth being precise about. A bundle is complete only for **what was armed
+before the event** and **what the process managed to write before it died**. Everything else is
+permanently unavailable — most of all the runtime state of a process the kernel already killed.
+
+So an `unknown` carries field 11, and there are four causes. **Only the first means "new kind":**
+
+```
+NEW_SIGNATURE   OOM message present, snapshots present, no rule matches   → add a rule (real gap in knowledge)
+CONFIG_GAP      dump/JFR/NMT were never armed                            → fix guard.sh, wait for next event
+EVIDENCE_GAP    nothing textual captured at all                           → gap in collection, not in rules
+TIMING_GAP      message present but no usable snapshot survived           → gap in detection latency
+```
+
+The distinction is the whole point: three of the four are **not** solved by writing a new rule. A system
+that shouts "unknown, must be a new bug" every time a flag was missing is a system nobody trusts.
+
+| Always in the bundle | Depends on being armed | Never available after death |
+|---|---|---|
+| exit code, stdout/stderr, `VM.flags`, cgroup path and limits | heap dump · JFR · allocation sites · NMT | live thread stacks · the exact heap at the moment of SIGKILL |
+
 ## Where the evidence is stored — three tiers
 
 Every death produces **one bundle**, not a pile of loose files.
