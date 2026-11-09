@@ -174,6 +174,52 @@ So the metric is **new distinct signatures per month**, which must trend to zero
 **And a rule is never written from a single occurrence.** A rule that fires wrongly is worse than
 `unknown`: it classifies silently and nobody notices. Wait for the second or third occurrence.
 
+## Closing the loop: `make learn` proposes, a human merges
+
+The unknown queue is not a dead end. It feeds a proposal step that is automatic up to the point
+where judgement starts:
+
+```
+event -> unknown -> fingerprint -> cluster (>=2 occurrences) -> candidate needle
+      -> validation against every stored signature -> review sheet -> human names the kind
+      -> four checks -> one test line -> coverage moves from C to B (or A with a case)
+```
+
+```bash
+make learn        # review sheet + out/learn/candidates.json
+make learn MIN=3  # demand more evidence before proposing
+```
+
+**Automated:** normalisation, clustering, candidate generation, and validation of the candidate
+against the whole stored corpus (a new rule may not match an already-classified kind), plus the
+one-line test that will guard it.
+
+**Never automated:** naming the kind and writing its four checks. That is a judgement about what is
+exhausted, not a string transformation — an automatic name would be a plausible lie.
+
+**Four guardrails, all deliberate:**
+
+```
+1  fewer than 2 occurrences      -> WAITING, no proposal (never write a rule from one sample)
+2  no stable literal >= 15 chars -> REJECTED, the message is almost entirely variable
+3  candidate matches a known kind-> REJECTED, it would silently steal events (reported as a conflict)
+4  it writes candidates.json, never classify.py
+```
+
+Output is a copy-paste-shaped sheet, not a patch applied behind your back:
+
+```
+--- PROPOSAL fp=c4d7ec78b8b0 events=2
+  sample   Exception in thread "main" java.lang.OutOfMemoryError: unable to allocate ZGC forwardee 0x9c11
+  rule     ("<kind>", 'java.lang.outofmemoryerror: unable to allocate zgc forwardee',
+            "<one sentence: what is actually exhausted>"),
+  checks   four ordered checks — a thread problem is not a heap problem
+```
+
+This is the same shape as the memory system this repo came from: **rules first, model second, human
+last.** An automatic updater that rewrites its own classifier unattended will eventually classify
+something confidently and wrongly, and nobody will notice — that failure mode is worse than `unknown`.
+
 ## Running it on Kubernetes
 
 The flags are identical everywhere; only four things change — where the dump lands (PVC, never

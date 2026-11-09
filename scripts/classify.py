@@ -169,7 +169,7 @@ def classify(case_dir: Path) -> tuple[str, str, list[str]]:
     stdout, stderr = read(case_dir, "stdout.txt"), read(case_dir, "stderr.txt")
     exit_code = read(case_dir, "exit_code.txt").strip()
     oom_killed = (read(case_dir, "oom_killed.txt").strip() or "").lower()
-    haystack = f"{stdout}\n{stderr}"
+    haystack = f"{stdout}\n{stderr}".lower()
 
     if exit_code == "137" or oom_killed == "true":
         return ("container_kill",
@@ -179,8 +179,8 @@ def classify(case_dir: Path) -> tuple[str, str, list[str]]:
                  f"docker.OOMKilled={oom_killed or 'unavailable'}"])
 
     for kind, needle, why in RULES:
-        if needle in haystack:
-            evidence = [ln.strip() for ln in haystack.splitlines() if needle in ln][:2]
+        if needle.lower() in haystack:
+            evidence = [ln.strip() for ln in haystack.splitlines() if needle.lower() in ln][:2]
             return kind, why, evidence
 
     return "unknown", "Matched no rule. This label is mandatory: never force a guess.", []
