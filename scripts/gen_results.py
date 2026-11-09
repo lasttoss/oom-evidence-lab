@@ -7,12 +7,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out"
-CASES = ["case1", "case2", "case3", "case4"]
+CASES = ["case1", "case2", "case3", "case4", "case5", "case6"]
 TITLE = {
     "case1": "Heap OOM — objects retained by a static field",
     "case2": "Direct buffer OOM — exceeded MaxDirectMemorySize",
     "case3": "Metaspace OOM — ClassLoader leak",
     "case4": "Killed by the kernel — cgroup OOMKilled",
+    "case5": "One allocation above the VM limit — not a leak",
+    "case6": "Cannot create a native thread — pids.max, heap stays free",
 }
 
 

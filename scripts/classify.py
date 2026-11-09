@@ -44,6 +44,17 @@ RULES = [
      "The OS could not commit memory for a thread stack: no swap left, or an overcommitted host."),
 ]
 
+# Single source of truth for coverage: which kind has a REAL reproduction in this repo.
+# A kind with no entry here is covered by a rule and a test, but has never been reproduced.
+REPRO = {
+    "heap": "case1",
+    "direct_buffer": "case2",
+    "metaspace": "case3",
+    "container_kill": "case4",
+    "array_too_large": "case5",
+    "native_thread": "case6",
+}
+
 CHECKS = {
     "heap": [
         "1) open the dump: % of live heap, your class or a JDK class, any Shortest Path to a static field",

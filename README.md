@@ -19,6 +19,10 @@ make report             # re-print alerts + rebuild docs/RESULTS.md
 make incidents          # print the incident index
 make prune DAYS=30      # delete old heap dumps, KEEP all text
 make KEEP_DUMP=1 case1  # keep the heap dump (~240 MB) to open in MAT
+make guard              # print + CHECK the JVM flags that arm the evidence (exit 1 if not armed)
+make watch PID=.. SECS=60  snapshot histo + cgroup while the process is alive
+make coverage           # A reproduced · B rule only · C no rule
+make intake PID=..      # collect a field set for an unrecognised OOM
 ```
 
 Requires `docker` (image `eclipse-temurin:21-jdk`) and `python3`.
@@ -40,6 +44,16 @@ visible on a weekly chart. If nobody sees it, that is a monitoring failure, not 
 | 2 | `direct_buffer` | `... direct buffer memory (allocated: N, limit: N)` | compare `MaxDirectMemorySize` with real traffic |
 | 3 | `metaspace` | `OutOfMemoryError: Metaspace` | find the **ClassLoader that never closes** |
 | 4 | `container_kill` | exit **137** + `OOMKilled=true`, JVM prints **nothing** | compare `memory.max` with `Xmx + off-heap` |
+| 5 | `array_too_large` | `Requested array size exceeds VM limit` | guard the input size — **not** a leak, `-Xmx` will not help |
+| 6 | `native_thread` | `unable to create native thread` | threads × `-Xss` is off-heap; check `pids.max` and pool bounds |
+
+Two lessons the lab taught us, written down so they are not re-learned at 2am:
+
+- **A non-daemon thread keeps the JVM alive after the OOM.** Case 6 originally hung for ten minutes
+  instead of dying: `main` threw, but the sleeping non-daemon threads were still there. An OOM that
+  "hangs" is usually this.
+- **Case 5 dies with an almost empty heap.** If you start by looking for a leak, you will lose a day.
+  The heap being empty *is* the evidence.
 
 Case 4 is the one that gets misdiagnosed most often: **no Java line runs** after the kernel sends
 SIGKILL, so every `try/catch`, `finally` and shutdown hook is void. It cannot be caught in code —
@@ -56,6 +70,27 @@ evidence automatically, and classify it into one of ten kinds. Nothing else.
 and the JVM prints nothing. Anything unrecognised is stored as `unknown`: never guessed.
 
 `python3 scripts/test_classify.py` checks the whole table against synthetic signatures (14 cases).
+
+### Coverage — what is actually proven
+
+```
+A  rule + test + a REAL reproduction in this repo    6 kinds
+B  rule + test, never reproduced                      4 kinds (gc_overhead, compressed_class,
+                                                                native_alloc, swap)
+C  no rule — stored as unknown, queued for intake     1
+```
+`make coverage` regenerates [`docs/COVERAGE.md`](docs/COVERAGE.md). **A B is not a defect**: a rule taken
+from the JDK source is correct the day it is written, while `native_alloc` needs a host condition
+(`vm.max_map_count`, an overcommitted kernel, a real malloc failure) that a container will not
+reproduce for you. Labelling it B beats faking a reproduction.
+
+**When an unknown arrives, the intake path — not a guess:**
+
+```bash
+make intake PID=<pid>     # standard field set + cgroup + dmesg into out/intake/<UTC>-<label>/
+```
+then: one rule line · four ordered checks · a case only if it is reproducible · one test line ·
+`make coverage`. **`unknown` is a queue, not an error.**
 
 **Explicitly out of scope** — not "later", simply not this system:
 
