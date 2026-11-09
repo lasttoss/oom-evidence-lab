@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Collect 9 evidence fields for ONE JVM process. READ-ONLY: no restart, no delete.
 # Every field is time-boxed; anything unavailable is reported as unavailable + why.
-# Usage: scripts/collect.sh <pid>
+# Usage: ops/collect.sh <pid>
 set -u
 PID="${1:-}"
 [ -z "$PID" ] && { echo "usage: collect.sh <pid>"; exit 2; }

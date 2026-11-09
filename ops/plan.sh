@@ -2,8 +2,9 @@
 # plan.sh — step 1 only: DETECT the environment, then emit the exact commands for THAT environment.
 # Same six questions everywhere. Different tools per platform. Nothing is executed here.
 #
-# Usage: scripts/plan.sh [auto|vm|docker|k8s] [pid]
+# Usage: ops/plan.sh [auto|vm|docker|k8s] [pid]
 set -u
+cd "$(dirname "$0")/.."   # repo root, so out/ paths are stable
 MODE="${1:-auto}"
 PID="${2:-$(pgrep -n -f 'java|tomcat' 2>/dev/null || echo 1)}"
 

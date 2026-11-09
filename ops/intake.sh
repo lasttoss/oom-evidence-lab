@@ -2,7 +2,7 @@
 # intake.sh — someone reported an OOM we do not recognise. Collect the standard field set first,
 # decide later. This never guesses and never edits the rule table; it only gathers.
 #
-# Usage: scripts/intake.sh <pid> [label]
+# Usage: ops/intake.sh <pid> [label]
 set -u
 PID="${1:?usage: intake.sh <pid> [label]}"
 LABEL="${2:-report}"
@@ -25,12 +25,12 @@ Intake bundle for one unrecognised OOM event ($(date -u +%FT%TZ)).
 
 Collected, not interpreted. Do these five things, in this order:
   1. read resource-fields.txt: ceiling first, then the signal, then usage
-  2. find the verbatim signature in the log and add one line to scripts/classify.py RULES
+  2. find the verbatim signature in the log and add one line to ops/classify.py RULES
   3. add its four ordered checks to CHECKS
-  4. reproduce it in cases/ if a container can: add a case and register it in REPRO
+  4. reproduce it in lab/cases/ if a container can: add a case and register it in REPRO
      (if it cannot be reproduced, leave REPRO alone — the coverage table will show level B)
-  5. add one line to scripts/test_classify.py, then run:
-       python3 scripts/test_classify.py && python3 scripts/coverage.py
+  5. add one line to lab/tests/test_classify.py, then run:
+       python3 lab/tests/test_classify.py && python3 lab/report/coverage.py
 TXT
 
 echo "collected: $(ls -1 "$OUT" | tr '\n' ' ')"

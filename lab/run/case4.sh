@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Case 4: killed by the KERNEL via cgroup (no JVM error thrown)
 set -u
-LAB_DIR="$(cd "$(dirname "$0")/.." && pwd)"; cd "$LAB_DIR"
+LAB_DIR="$(cd "$(dirname "$0")/../.." && pwd)"; cd "$LAB_DIR"
 OUT=out/case4; mkdir -p "$OUT"
 command -v docker >/dev/null || { echo "FAIL: docker not found"; exit 1; }
 docker image inspect eclipse-temurin:21-jdk >/dev/null 2>&1 || {
@@ -9,7 +9,7 @@ docker image inspect eclipse-temurin:21-jdk >/dev/null 2>&1 || {
 
 rm -rf "$OUT/classes"; mkdir -p "$OUT/classes"
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/lab" -w /lab eclipse-temurin:21-jdk \
-  javac -d out/case4/classes cases/ContainerKill.java || exit 1
+  javac -d out/case4/classes lab/cases/ContainerKill.java || exit 1
 
 docker rm -f oomlab-kill >/dev/null 2>&1 || true
 set +e

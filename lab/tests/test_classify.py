@@ -9,13 +9,13 @@ import tempfile
 from pathlib import Path
 
 def load_sig():
-    spec = importlib.util.spec_from_file_location("signature", Path(__file__).with_name("signature.py"))
+    spec = importlib.util.spec_from_file_location("signature", Path(__file__).resolve().parents[2] / "ops/signature.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
 
-spec = importlib.util.spec_from_file_location("classify", Path(__file__).with_name("classify.py"))
+spec = importlib.util.spec_from_file_location("classify", Path(__file__).resolve().parents[2] / "ops/classify.py")
 classify = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(classify)
 

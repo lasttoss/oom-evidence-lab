@@ -10,7 +10,7 @@ candidate against every signature already stored, so a new rule cannot silently 
 What is never automated: naming the kind and writing its four checks. That is a judgement about the
 world, not a string transformation.
 
-Usage: scripts/learn.py [--min-events N]
+Usage: lab/report/learn.py [--min-events N]
 Writes out/learn/candidates.json and prints a review sheet.
 """
 from __future__ import annotations
@@ -22,8 +22,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "ops"))
 from signature import fingerprint, normalise, signal_line  # noqa: E402
 
 INDEX = ROOT / "out" / "incidents" / "index.jsonl"

@@ -6,7 +6,7 @@ DOCKER_RUN := docker run --rm --user $$(id -u):$$(id -g) -e HOME=/tmp -e KEEP_DU
 .PHONY: demo case1 case2 case3 case4 case5 case6 report incidents plan guard watch coverage attribution gaps learn upstream intake prune clean help
 
 help:
-	@echo "make demo               run all 4 cases, store bundles, print alerts (~25s)"
+	@echo "make demo               run all 6 cases, store bundles, print alerts (~30s)"
 	@echo "make case1..case6       run a single case"
 	@echo "make report             re-print alerts from existing artifacts + rebuild docs/RESULTS.md"
 	@echo "make incidents          print the stored incident index"
@@ -24,70 +24,70 @@ help:
 	@echo "make KEEP_DUMP=1 case1  keep the heap dump (~240MB) to open in MAT"
 
 case1:
-	$(DOCKER_RUN) bash scripts/case1.sh
-	@python3 scripts/store.py archive out/case1
+	$(DOCKER_RUN) bash lab/run/case1.sh
+	@python3 ops/store.py archive out/case1
 
 case2:
-	$(DOCKER_RUN) bash scripts/case2.sh
-	@python3 scripts/store.py archive out/case2
+	$(DOCKER_RUN) bash lab/run/case2.sh
+	@python3 ops/store.py archive out/case2
 
 case3:
-	$(DOCKER_RUN) bash scripts/case3.sh
-	@python3 scripts/store.py archive out/case3
+	$(DOCKER_RUN) bash lab/run/case3.sh
+	@python3 ops/store.py archive out/case3
 
 case4:
-	bash scripts/case4.sh
-	@python3 scripts/store.py archive out/case4
+	bash lab/run/case4.sh
+	@python3 ops/store.py archive out/case4
 
 case5:
-	$(DOCKER_RUN) bash scripts/case5.sh
-	@python3 scripts/store.py archive out/case5
+	$(DOCKER_RUN) bash lab/run/case5.sh
+	@python3 ops/store.py archive out/case5
 
 case6:
-	bash scripts/case6.sh
-	@python3 scripts/store.py archive out/case6
+	bash lab/run/case6.sh
+	@python3 ops/store.py archive out/case6
 
 demo: case1 case2 case3 case4 case5 case6 report
 
 report:
-	@python3 scripts/classify.py | tee out/summary.txt
-	@python3 scripts/gen_results.py
-	@python3 scripts/coverage.py > /dev/null
-	@python3 scripts/gaps.py > /dev/null
-	@python3 scripts/attribution.py > /dev/null
+	@python3 ops/classify.py | tee out/summary.txt
+	@python3 lab/report/gen_results.py
+	@python3 lab/report/coverage.py > /dev/null
+	@python3 lab/report/gaps.py > /dev/null
+	@python3 lab/report/attribution.py > /dev/null
 
 incidents:
-	@python3 scripts/store.py list
+	@python3 ops/store.py list
 
 plan:
-	@bash scripts/plan.sh $(or $(ENV),auto) $(or $(PID),)
+	@bash ops/plan.sh $(or $(ENV),auto) $(or $(PID),)
 
 guard:
-	@bash scripts/guard.sh $(or $(ENV),auto) $(or $(DUMP_DIR),/var/log/java-dumps)
+	@bash ops/guard.sh $(or $(ENV),auto) $(or $(DUMP_DIR),/var/log/java-dumps)
 
 watch:
-	@bash scripts/watch.sh $(or $(PID),1) $(or $(SECS),60)
+	@bash ops/watch.sh $(or $(PID),1) $(or $(SECS),60)
 
 coverage:
-	@python3 scripts/coverage.py
+	@python3 lab/report/coverage.py
 
 attribution:
-	@python3 scripts/attribution.py
+	@python3 lab/report/attribution.py
 
 gaps:
-	@python3 scripts/gaps.py
+	@python3 lab/report/gaps.py
 
 learn:
-	@python3 scripts/learn.py $(if $(MIN),--min-events $(MIN),)
+	@python3 lab/report/learn.py $(if $(MIN),--min-events $(MIN),)
 
 upstream:
-	@bash scripts/upstream.sh
+	@bash lab/report/upstream.sh
 
 intake:
-	@bash scripts/intake.sh $(or $(PID),1) $(or $(LABEL),report)
+	@bash ops/intake.sh $(or $(PID),1) $(or $(LABEL),report)
 
 prune:
-	@python3 scripts/store.py prune --dumps-days $(or $(DAYS),30)
+	@python3 ops/store.py prune --dumps-days $(or $(DAYS),30)
 
 clean:
 	rm -rf out/case1 out/case2 out/case3 out/case4 out/case5 out/case6 out/summary.txt

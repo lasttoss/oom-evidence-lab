@@ -4,8 +4,9 @@
 #   2. CHECK the flag set you already have: dump path, free space, NMT, exit behaviour
 # Nothing here starts, stops or restarts a process. Exit 1 = the guard is not armed.
 #
-# Usage: scripts/guard.sh [auto|vm|docker|k8s|tomcat] [dump_dir]
+# Usage: ops/guard.sh [auto|vm|docker|k8s|tomcat] [dump_dir]
 set -u
+cd "$(dirname "$0")/.."   # repo root, so out/ paths are stable
 MODE="${1:-auto}"
 DUMP_DIR="${2:-/var/log/java-dumps}"
 

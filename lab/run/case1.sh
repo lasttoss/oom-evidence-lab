@@ -3,7 +3,7 @@
 source "$(dirname "$0")/lib.sh"
 require_tools
 OUT=out/case1; mkdir -p "$OUT"; rm -rf "$OUT/classes"; mkdir -p "$OUT/classes"
-"$JAVAC_BIN" -d "$OUT/classes" cases/HeapLeak.java || exit 1
+"$JAVAC_BIN" -d "$OUT/classes" lab/cases/HeapLeak.java || exit 1
 rm -f "$OUT/heap.hprof" "$OUT/gc.log"
 run_case case1 \
   -Xmx256m -XX:+UseG1GC \

@@ -5,7 +5,7 @@
 # string literals in HotSpot, so the honest way to keep the table current is to read them from source
 # and notice when they change. This script does exactly that, and nothing else.
 #
-# Usage: scripts/upstream.sh [--offline]
+# Usage: lab/report/upstream.sh [--offline]
 set -u
 REF="${JDK_REF:-master}"
 BASE="https://raw.githubusercontent.com/openjdk/jdk/$REF/src"

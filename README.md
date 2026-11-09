@@ -81,7 +81,7 @@ evidence automatically, and classify it into one of ten kinds. Nothing else.
 `native_thread` · `native_alloc` · `swap` — plus `container_kill`, where the kernel kills the process
 and the JVM prints nothing. Anything unrecognised is stored as `unknown`: never guessed.
 
-`python3 scripts/test_classify.py` checks the whole table against synthetic signatures (14 cases).
+`python3 lab/tests/test_classify.py` checks the whole table against synthetic signatures (14 cases).
 
 ### Coverage — what is actually proven
 
@@ -126,7 +126,7 @@ Q5 THREADS    can a thread still be created       Thread.print, pids.max, ulimit
 Q6 SIGNAL     kernel killed it, or JVM threw      OOMKilled, cgroup memory.events, hs_err_pid
 ```
 
-`scripts/plan.sh` detects the environment (vm · docker · k8s · tomcat) and prints the exact
+`ops/plan.sh` detects the environment (vm · docker · k8s · tomcat) and prints the exact
 commands for that environment — it never guesses at a pod limit with a host command:
 
 ```bash
@@ -157,7 +157,7 @@ A model is only used for unknown signatures, and always labelled *unconfirmed*.
 10 bundle path — so the alert leads straight back to the artifacts
 ```
 
-**Four rules for the collector** ([`scripts/collect.sh`](scripts/collect.sh)):
+**Four rules for the collector** ([`ops/collect.sh`](ops/collect.sh)):
 
 1. **Read-only** — no restart, no deletes, nothing written outside `out/`.
 2. **Time-boxed** — every `jcmd` runs under `timeout`; the collector may never hang.
@@ -379,7 +379,7 @@ Querying:
 
 ```bash
 grep '"kind": "heap"' out/incidents/index.jsonl   # every heap OOM
-python3 scripts/store.py list                     # everything
+python3 ops/store.py list                     # everything
 ls out/incidents/*-container_kill/                # bundles by kind
 ```
 

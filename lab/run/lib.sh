@@ -1,6 +1,6 @@
 # Shared helpers for every case script. Each case writes artifacts into out/<case>/.
 set -u
-LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$LAB_DIR"
 JAVA_BIN="${JAVA_BIN:-java}"
 JAVAC_BIN="${JAVAC_BIN:-javac}"

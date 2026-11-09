@@ -2,8 +2,9 @@
 # watch.sh — capture evidence on a schedule while the process is still alive.
 # The point: a single snapshot answers nothing. Two snapshots far apart show growth.
 #
-# Usage: scripts/watch.sh <pid> [interval_seconds]
+# Usage: ops/watch.sh <pid> [interval_seconds]
 set -u
+cd "$(dirname "$0")/.."   # repo root, so out/ paths are stable
 PID="${1:?usage: watch.sh <pid> [interval_seconds]}"
 INTERVAL="${2:-60}"
 OUT="out/watch/$(date -u +%Y%m%dT%H%M%SZ)"
