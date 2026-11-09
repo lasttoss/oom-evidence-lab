@@ -202,6 +202,18 @@ https://bugs.openjdk.org  jql: text ~ "OutOfMemoryError" ORDER BY created DESC
 github.com/openjdk/jdk/commits/master/src/hotspot/share/memory/universe.cpp
 ```
 
+There is a second reference, and it is not the same list: the Oracle troubleshooting guide,
+*Understand the OutOfMemoryError Exception*, documents **seven** detail messages in words (cause and
+action for each) — see [`docs/UPSTREAM.md`](docs/UPSTREAM.md) for the reconciliation table.
+
+The two references disagree, and that is exactly why both are kept:
+
+```
+doc only      stack_trace_with_native_method   -> was MISSING from our rules until this cross-check
+source only   direct_buffer, native_thread     -> composed in Java / documented only in bug reports
+doc incomplete but readable   ·   source complete but unreadable to a human
+```
+
 A `DRIFT` result does not mean the JDK is wrong — it means **our rule is now wrong**, and the wording
 change is exactly the kind of "unknown" that would otherwise appear in production for a week.
 

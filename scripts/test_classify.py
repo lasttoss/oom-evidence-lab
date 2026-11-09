@@ -32,6 +32,7 @@ CASES = [
     ("Out of Memory Error (allocation.cpp:505), pid=1, tid=1", "134", None, "native_alloc"),
     ("Native memory allocation (mmap) failed to map 12288 bytes", "1", None, "native_alloc"),
     ("java.lang.OutOfMemoryError: Out of swap space?", "1", None, "swap"),
+    ("java.lang.OutOfMemoryError: insufficient memory stack_trace_with_native_method", "1", None, "native_alloc"),
     ("", "137", "true", "container_kill"),
     ("", "137", None, "container_kill"),
     ("something nobody has seen before", "1", None, "unknown"),

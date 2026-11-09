@@ -41,6 +41,9 @@ RULES = [
     ("native_alloc", "Out of Memory Error (",
      "The VM aborted: it could not allocate native memory and printed hs_err_pid instead of throwing. "
      "Nothing was caught, so the exit code is a signal number, not 1."),
+    ("native_alloc", "stack_trace_with_native_method",
+     "A native method could not allocate. Documented in the Java troubleshooting guide as "
+     "\"<reason> stack_trace_with_native_method\"; the top frame of the trace is a native method."),
     ("native_alloc", "Native memory allocation",
      "Native malloc/mmap failed. Usually a container limit, max_map_count, or an off-heap leak. The VM aborts."),
     ("swap", "Out of swap space?",

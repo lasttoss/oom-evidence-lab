@@ -48,6 +48,10 @@ echo "not pinned to a file yet (checked by eye, not by this script):"
 printf '%s\n' "$UNPINNED" | tr '|' '\n' | sed 's/^/  - /'
 
 echo
+echo "human cross-check (documents 7 of the 10 kinds, in words, with cause and action):"
+echo "  https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/memleaks002.html"
+echo "  see docs/UPSTREAM.md for the reconciliation table"
+echo
 echo "new messages arrive here first — check when a JDK upgrade lands:"
 echo "  https://bugs.openjdk.org/issues/?jql=text%20~%20%22OutOfMemoryError%22%20ORDER%20BY%20created%20DESC"
 echo "  https://github.com/openjdk/jdk/commits/$REF/src/hotspot/share/memory/universe.cpp"
