@@ -45,6 +45,27 @@ Case 4 is the one that gets misdiagnosed most often: **no Java line runs** after
 SIGKILL, so every `try/catch`, `finally` and shutdown hook is void. It cannot be caught in code —
 it must be caught from cgroup or kubelet level.
 
+## Scope: Java only
+
+This is **one system with one job**: detect an out-of-memory event on a Java process, collect the
+evidence automatically, and classify it into one of ten kinds. Nothing else.
+
+**Covered (10 kinds).** The nine `OutOfMemoryError` messages HotSpot can throw —
+`heap` · `gc_overhead` · `array_too_large` · `metaspace` · `compressed_class` · `direct_buffer` ·
+`native_thread` · `native_alloc` · `swap` — plus `container_kill`, where the kernel kills the process
+and the JVM prints nothing. Anything unrecognised is stored as `unknown`: never guessed.
+
+`python3 scripts/test_classify.py` checks the whole table against synthetic signatures (14 cases).
+
+**Explicitly out of scope** — not "later", simply not this system:
+
+- other runtimes (Go, Node, .NET, Python) — different signals, different tools;
+- serverless — no dump is possible, the contract would have to change;
+- fixing the leak or tuning the JVM — this system produces evidence and a hypothesis, a human decides;
+- an LLM in the classification path — the rules are complete enough that a model would only add noise.
+
+Java is where the rules can be exhaustive, which is why the scope is drawn here on purpose.
+
 ## Step 1 is environment-dependent, step 2 is not
 
 The same six questions are asked everywhere; only the tool changes:

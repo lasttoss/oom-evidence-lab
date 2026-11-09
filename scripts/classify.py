@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Classify an OOM event from artifacts: RULES FIRST, model second.
 
+SCOPE: Java only. It covers the nine OutOfMemoryError messages HotSpot can throw
+plus the one case where the JVM says nothing because the kernel killed it.
+
 - Reads only files under out/<case>/ — no network, no model call.
 - Every conclusion carries a verbatim evidence line taken from a real file.
 - The result is always labelled UNCONFIRMED: it is a hypothesis, not a verdict.
@@ -19,13 +22,26 @@ RULES = [
     ("direct_buffer", "direct buffer memory",
      "Exceeded -XX:MaxDirectMemorySize. Heap can stay clean: the shortage is off-heap."),
     ("metaspace", "OutOfMemoryError: Metaspace",
-     "Metaspace is full: dynamically generated classes or ClassLoaders that are never closed."),
-    ("metaspace", "OutOfMemoryError: Compressed class space",
+     "Metaspace is full: dynamically generated classes, or ClassLoaders never closed."),
+    ("compressed_class", "Compressed class space",
      "Compressed Class Space is full: same ClassLoader leak, hitting its own separate region."),
+    ("array_too_large", "Requested array size exceeds VM limit",
+     "One single allocation is larger than the VM can ever satisfy. This is NOT a leak."),
+    ("native_thread", "unable to create native thread",
+     "Cannot start a thread: hit the thread limit, pids.max, or the memory reserved for stacks."),
+    ("native_thread", "unable to create new native thread",
+     "Cannot start a thread: hit the thread limit, pids.max, or the memory reserved for stacks."),
+    ("gc_overhead", "GC overhead limit exceeded",
+     "Heap almost full and GC recovers almost nothing: live set too large, or a leak."),
     ("heap", "OutOfMemoryError: Java heap space",
      "Genuine heap exhaustion: a real leak, a burst of allocation, or one oversized allocation."),
-    ("heap", "OutOfMemoryError: GC overhead limit exceeded",
-     "Heap almost full and GC recovers almost nothing: live set too large, or a leak."),
+    ("native_alloc", "Out of Memory Error (",
+     "The VM aborted: it could not allocate native memory and printed hs_err_pid instead of throwing. "
+     "Nothing was caught, so the exit code is a signal number, not 1."),
+    ("native_alloc", "Native memory allocation",
+     "Native malloc/mmap failed. Usually a container limit, max_map_count, or an off-heap leak. The VM aborts."),
+    ("swap", "Out of swap space?",
+     "The OS could not commit memory for a thread stack: no swap left, or an overcommitted host."),
 ]
 
 CHECKS = {
@@ -52,6 +68,42 @@ CHECKS = {
         "2) read /sys/fs/cgroup/memory.events: how much did oom_kill increase",
         "3) check HPA/limits: was the limit lowered below real demand",
         "4) only after ruling out 1-3, look for a leak",
+    ],
+    "gc_overhead": [
+        "1) this is a heap kind: read 02 and audit the checks for 'heap'",
+        "2) compare the heap after Full GC across snapshots: if the floor rises, it is a leak",
+        "3) if the floor is flat, the live set is simply too large for -Xmx: that is a sizing answer",
+        "4) do not tune GC flags before you know the floor",
+    ],
+    "array_too_large": [
+        "1) find the allocation site in the stack trace of the error",
+        "2) check the input size that produced it: an upload, a batch size, a query without LIMIT",
+        "3) fix by streaming or paginating; raising -Xmx will not help",
+        "4) add an input guard: reject a request that needs an array above the ceiling",
+    ],
+    "compressed_class": [
+        "1) jcmd <pid> VM.metaspace — look at the Compressed Class Space row separately",
+        "2) count classes per ClassLoader: one loader with thousands of classes is the suspect",
+        "3) raise -XX:CompressedClassSpaceSize only as a stopgap, then find the loader",
+        "4) dump and find the retained ClassLoader: Path to GC root",
+    ],
+    "native_thread": [
+        "1) count threads: jcmd <pid> Thread.print | grep -c '^\"' and compare with the expected pool sizes",
+        "2) read the limit: pids.max (cgroup), ulimit -u, /proc/sys/kernel/threads-max",
+        "3) compute stack memory: threads x -Xss — that is off-heap and counts against the container",
+        "4) look for an unbounded pool or a thread created per request",
+    ],
+    "native_alloc": [
+        "1) read hs_err_pid*.log: it names the exact allocation that failed and the memory map at death",
+        "2) if it says mmap/commit failed: compare memory.max with heap + off-heap + stacks",
+        "3) check vm.max_map_count for the mmap variant",
+        "4) enable -XX:NativeMemoryTracking=summary ahead of time: NMT cannot be switched on after the fact",
+    ],
+    "swap": [
+        "1) free -m and swapon --show: is there swap at all",
+        "2) this is an OS-level shortage, not a Java leak",
+        "3) reduce -Xss or the thread count; a thread stack is committed at creation",
+        "4) on a host with no swap, the same failure surfaces as the kernel killing the process",
     ],
     "unknown": [
         "1) add evidence: exit code, cgroup oom_kill, stderr, two histogram snapshots",
