@@ -1,5 +1,7 @@
 # OOM Evidence Lab
 
+[![CI](https://github.com/lasttoss/oom-evidence-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/lasttoss/oom-evidence-lab/actions/workflows/ci.yml)
+
 Reproduces **four kinds of OOM** and turns each death into **one evidence bundle** —
 instead of a ticket that only says "the pod restarted".
 
@@ -10,6 +12,10 @@ instead of a ticket that only says "the pod restarted".
 - Classification is **rules first, model second** — no model is called anywhere in this repo.
 
 Measured numbers from the last run: see [`docs/RESULTS.md`](docs/RESULTS.md).
+
+What the CI badge proves on every push: all 6 cases are re-run in a container on a fresh host
+and the run fails unless every kind is still classified and every incident still carries its
+stored bundle. Nothing in the badge depends on the author's machine.
 
 ## How the pieces fit
 
