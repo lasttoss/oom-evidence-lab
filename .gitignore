@@ -17,3 +17,5 @@ out/summary.txt
 out/incidents/*/
 out/incidents/*.jfr
 out/case*/bundle.txt
+__pycache__/
+*.pyc

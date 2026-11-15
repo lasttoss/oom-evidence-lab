@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: guard is armed on a real host
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create the dump directory the JVM would write to
+        run: sudo mkdir -p /var/log/java-dumps && sudo chmod 777 /var/log/java-dumps
+      - name: guard must report ARMED
+        run: |
+          out=$(make guard DUMP_DIR=/var/log/java-dumps 2>&1) || { echo "$out"; exit 1; }
+          echo "$out"
+          echo "$out" | grep -q "RESULT guard=ARMED" || { echo "::error::guard did not report ARMED"; exit 1; }
+      - name: guard must fail when the evidence is not armed
+        run: |
+          if make guard DUMP_DIR=/nonexistent/java-dumps >/dev/null 2>&1; then
+            echo "::error::guard passed with a missing dump directory"; exit 1
+          fi
+          echo "OK: guard exits non-zero when the evidence is not armed"
+
+  demo:
+    name: 6 cases reproduce and the docs match the committed ones
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: docker server version
+        run: docker version --format '{{.Server.Version}}'
+      - name: make demo (6 cases, ~25s)
+        run: make demo
+      - name: 6 distinct OOM kinds, each classified with a stored bundle
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          rows = [json.loads(l) for l in open("out/incidents/index.jsonl")]
+          kinds = sorted({r["kind"] for r in rows if r.get("kind")})
+          bad = [r.get("case") for r in rows if not r.get("kind") or not r.get("files")]
+          print(f"{len(rows)} incident records, {len(kinds)} distinct kinds: {kinds}")
+          if len(rows) < 6:
+              print("::error::expected at least 6 recorded incidents, got", len(rows)); sys.exit(1)
+          if len(kinds) != 6:
+              print("::error::expected 6 distinct OOM kinds, got", len(kinds)); sys.exit(1)
+          if bad:
+              print("::error::incidents missing classification or bundle:", bad); sys.exit(1)
+          print("OK: 6 kinds, every incident carries a kind and a bundle")
+          PY
+      - name: docs/RESULTS.md must list every kind it just classified
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          rows = [json.loads(l) for l in open("out/incidents/index.jsonl")]
+          doc = open("docs/RESULTS.md", encoding="utf-8").read()
+          missing = [k for k in sorted({r["kind"] for r in rows}) if k not in doc]
+          if missing:
+              print("::error::docs/RESULTS.md is missing kinds:", missing); sys.exit(1)
+          print("OK: docs/RESULTS.md regenerated and covers every kind")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incidents
+          path: |
+            out/incidents/index.jsonl
+            out/summary.txt
+            docs/RESULTS.md
+          retention-days: 14
