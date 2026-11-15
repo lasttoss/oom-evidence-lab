@@ -1,0 +1,5 @@
+# GitHub language detection: this is a Java lab. The Python files are the driver.
+*.java linguist-language=Java
+lab/** linguist-detectable=true
+scripts/** linguist-documentation=false
+docs/** linguist-documentation=true
