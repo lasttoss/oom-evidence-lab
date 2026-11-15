@@ -10,6 +10,7 @@ help:
 	@echo "make case1..case6       run a single case"
 	@echo "make report             re-print alerts from existing artifacts + rebuild docs/RESULTS.md"
 	@echo "make reset              wipe out/case* and out/incidents (demo appends otherwise)"
+	@echo "make verify             clean run, then prove docs/ is reproducible (masks the measured fields)"
 	@echo "make incidents          print the stored incident index"
 	@echo "make guard              print + CHECK the JVM flags that arm the evidence (exit 1 if not armed)"
 	@echo "make watch PID=.. SECS=60  snapshot histo + cgroup while the process is alive"
@@ -51,6 +52,11 @@ case6:
 reset:
 	@rm -rf out/case* out/incidents
 	@echo "cleared out/case* and out/incidents — the next \`make demo\` starts from zero"
+
+verify:
+	@rm -rf /tmp/docs_committed && cp -r docs /tmp/docs_committed
+	@$(MAKE) --no-print-directory reset demo >/dev/null
+	@python3 ops/normalize.py docs /tmp/docs_committed
 
 demo: case1 case2 case3 case4 case5 case6 report
 

@@ -13,9 +13,17 @@ instead of a ticket that only says "the pod restarted".
 
 Measured numbers from the last run: see [`docs/RESULTS.md`](docs/RESULTS.md).
 
-What the CI badge proves on every push: all 6 cases are re-run in a container on a fresh host
-and the run fails unless every kind is still classified and every incident still carries its
-stored bundle. Nothing in the badge depends on the author's machine.
+What the CI badge proves on every push: all 6 cases are re-run in a container on a fresh host,
+and the run fails unless every kind is still classified, every incident still carries its stored
+bundle, and `docs/` is regenerated identically after masking the three fields that are
+*measurements* rather than facts — wall-clock timestamps, how long the JVM took to write a dump,
+and the per-run bundle directory name. Nothing in the badge depends on the author's machine.
+
+Reproduce the same check locally:
+
+```bash
+make verify        # clean run + compare docs/ with the committed ones, masking those three fields
+```
 
 ## How the pieces fit
 

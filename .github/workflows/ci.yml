@@ -40,6 +40,8 @@ jobs:
           python-version: "3.12"
       - name: docker server version
         run: docker version --format '{{.Server.Version}}'
+      - name: snapshot the committed docs before the run
+        run: cp -r docs /tmp/docs_committed
       - name: make reset && make demo (6 cases, ~25s)
         run: |
           make reset
@@ -60,6 +62,8 @@ jobs:
               print("::error::incidents missing classification or bundle:", bad); sys.exit(1)
           print("OK: 6 kinds, every incident carries a kind and a bundle")
           PY
+      - name: docs/ must be reproducible after masking the measured fields
+        run: python3 ops/normalize.py docs /tmp/docs_committed
       - name: docs/RESULTS.md must list every kind it just classified
         run: |
           python3 - <<'PY'
