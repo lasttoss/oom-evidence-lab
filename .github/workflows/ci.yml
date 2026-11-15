@@ -40,8 +40,10 @@ jobs:
           python-version: "3.12"
       - name: docker server version
         run: docker version --format '{{.Server.Version}}'
-      - name: make demo (6 cases, ~25s)
-        run: make demo
+      - name: make reset && make demo (6 cases, ~25s)
+        run: |
+          make reset
+          make demo
       - name: 6 distinct OOM kinds, each classified with a stored bundle
         run: |
           python3 - <<'PY'
@@ -50,8 +52,8 @@ jobs:
           kinds = sorted({r["kind"] for r in rows if r.get("kind")})
           bad = [r.get("case") for r in rows if not r.get("kind") or not r.get("files")]
           print(f"{len(rows)} incident records, {len(kinds)} distinct kinds: {kinds}")
-          if len(rows) < 6:
-              print("::error::expected at least 6 recorded incidents, got", len(rows)); sys.exit(1)
+          if len(rows) != 6:
+              print("::error::expected exactly 6 recorded incidents, got", len(rows)); sys.exit(1)
           if len(kinds) != 6:
               print("::error::expected 6 distinct OOM kinds, got", len(kinds)); sys.exit(1)
           if bad:

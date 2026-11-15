@@ -9,6 +9,7 @@ help:
 	@echo "make demo               run all 6 cases, store bundles, print alerts (~30s)"
 	@echo "make case1..case6       run a single case"
 	@echo "make report             re-print alerts from existing artifacts + rebuild docs/RESULTS.md"
+	@echo "make reset              wipe out/case* and out/incidents (demo appends otherwise)"
 	@echo "make incidents          print the stored incident index"
 	@echo "make guard              print + CHECK the JVM flags that arm the evidence (exit 1 if not armed)"
 	@echo "make watch PID=.. SECS=60  snapshot histo + cgroup while the process is alive"
@@ -46,6 +47,10 @@ case5:
 case6:
 	bash lab/run/case6.sh
 	@python3 ops/store.py archive out/case6
+
+reset:
+	@rm -rf out/case* out/incidents
+	@echo "cleared out/case* and out/incidents — the next \`make demo\` starts from zero"
 
 demo: case1 case2 case3 case4 case5 case6 report
 
