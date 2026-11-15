@@ -5,6 +5,18 @@
 Reproduces **six kinds of OOM** and turns each death into **one evidence bundle** —
 instead of a ticket that only says "the pod restarted".
 
+## Verify in 60 seconds
+
+```bash
+git clone https://github.com/lasttoss/oom-evidence-lab && cd oom-evidence-lab
+make demo     # 6 cases, ~25 s: every death leaves one bundle and prints a 9-field alert
+make verify   # clean run, then asserts docs/ matches the committed docs after masking 4 measured fields
+make guard    # must print RESULT guard=armed; on a host without a dump dir it must fail instead
+```
+
+Two of these are fail conditions, not demos: `make verify` goes red when a doc drifts, and CI runs
+`make guard` twice — once armed, once with a directory that does not exist, which must not pass.
+
 ## Result in three lines
 
 - All six kinds are reproducible, one command each, **about 25 seconds** in total on a 16-core host.
