@@ -15,14 +15,15 @@ Measured numbers from the last run: see [`docs/RESULTS.md`](docs/RESULTS.md).
 
 What the CI badge proves on every push: all 6 cases are re-run in a container on a fresh host,
 and the run fails unless every kind is still classified, every incident still carries its stored
-bundle, and `docs/` is regenerated identically after masking the three fields that are
-*measurements* rather than facts — wall-clock timestamps, how long the JVM took to write a dump,
-and the per-run bundle directory name. Nothing in the badge depends on the author's machine.
+bundle, and `docs/` is regenerated identically after masking the fields that are *measurements*
+rather than facts: wall-clock timestamps, how long the JVM took to write a heap dump, the size of
+that dump, and the per-run bundle directory name. Nothing in the badge depends on the author's
+machine.
 
 Reproduce the same check locally:
 
 ```bash
-make verify        # clean run + compare docs/ with the committed ones, masking those three fields
+make verify        # clean run + compare docs/ with the committed ones, masking the measured fields
 ```
 
 ## How the pieces fit

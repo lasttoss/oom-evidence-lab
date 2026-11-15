@@ -6,7 +6,8 @@ read from a real process death:
 
   1. wall-clock timestamps     20261115T123033816114Z, 2026-11-15T12:30:33+00:00
   2. how long the JVM took to write a heap dump   "in 0.468 secs"
-  3. the per-run bundle directory name (it carries the timestamp)
+  3. the size of that dump in bytes               heap_dump_bytes=238530625, [238530625 bytes
+  4. the per-run bundle directory name (it carries the timestamp)
 
 Everything else — kind, exit code, the verbatim OOM message, the ordered checks, the
 attribution text, the coverage and gap tables — must match byte for byte. If it does not,
@@ -26,6 +27,9 @@ MASKS: list[tuple[str, str]] = [
     (r"\d{8}T\d{12,}Z", "<RUNSTAMP>"),          # 20261115T123033816114Z
     (r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00", "<ISO>"),  # 2026-11-15T12:30:33+00:00
     (r"in \d+\.\d+ secs", "in <SECS> secs"),     # heap dump timing
+    (r"heap_dump_bytes=\d+", "heap_dump_bytes=<BYTES>"),
+    (r"\[\d+ bytes", "[<BYTES> bytes"),
+    (r"\b\d+ MB\b", "<MB> MB"),                   # the same dump, rounded for the table
     (r"<RUNSTAMP>-case", "<RUNSTAMP>-case"),     # keep the case suffix comparable
 ]
 
