@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/lasttoss/oom-evidence-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/lasttoss/oom-evidence-lab/actions/workflows/ci.yml)
 
-Reproduces **four kinds of OOM** and turns each death into **one evidence bundle** —
+Reproduces **six kinds of OOM** and turns each death into **one evidence bundle** —
 instead of a ticket that only says "the pod restarted".
 
 ## Result in three lines
 
-- All four kinds are reproducible, one command each, **about 25 seconds** in total on a 16-core host.
+- All six kinds are reproducible, one command each, **about 25 seconds** in total on a 16-core host.
 - Every death produces a bundle plus a **9-field alert** (exit code, verbatim evidence, fastest-growing class, ordered checks).
 - Classification is **rules first, model second** — no model is called anywhere in this repo.
 
