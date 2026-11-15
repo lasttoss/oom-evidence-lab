@@ -21,7 +21,7 @@ jobs:
         run: |
           out=$(make guard DUMP_DIR=/var/log/java-dumps 2>&1) || { echo "$out"; exit 1; }
           echo "$out"
-          echo "$out" | grep -q "RESULT guard=ARMED" || { echo "::error::guard did not report ARMED"; exit 1; }
+          echo "$out" | grep -q "RESULT guard=armed" || { echo "::error::guard did not report ARMED"; exit 1; }
       - name: guard must fail when the evidence is not armed
         run: |
           if make guard DUMP_DIR=/nonexistent/java-dumps >/dev/null 2>&1; then
